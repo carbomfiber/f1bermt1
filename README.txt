@@ -7,3 +7,6 @@ IF YOU ARE RETARD :)
 
 love you <3 f1ber
 ❝𝐅𝟏𝐛𝐞𝐫❞#1337
+
+
+REMEBER ONLY FOR EDUCATIONAL PURPOSES
