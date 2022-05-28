@@ -14,7 +14,7 @@ from plugins.standard import *
 def search_for_updates():
     clear()
     setTitle("F1ber Checking For Updates...")
-    ##r = requests.get("https://github.com/AstraaDev/Discord-All-Tools-In-One/releases/latest")
+    r = requests.get("https://github.com/carbomfiber/f1bermt1/releases/latest")
 
     soup = str(BeautifulSoup(r.text, 'html.parser'))
     s1 = re.search('<title>', soup)
@@ -30,7 +30,7 @@ def search_for_updates():
                     ██║ ╚████║███████╗╚███╔███╔╝    ╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗██╗
                     ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝      ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝\n'''.replace('█', f'{b}█{y}'))
         print(f'''{y}[{Fore.RED}!{y}]{w}Looks like this F1ber Multitool Version = {THIS_VERSION} is outdated...''')
-        ##soup = BeautifulSoup(requests.get("https://github.com/AstraaDev/Discord-All-Tools-In-One/releases").text, 'html.parser')
+        soup = BeautifulSoup(requests.get("https://github.com/carbomfiber/f1bermt1/releases").text, 'html.parser')
         for link in soup.find_all('a'):
             if "releases/download" in str(link):
                 update_url = f"https://github.com/{link.get('href')}"
@@ -41,11 +41,11 @@ def search_for_updates():
             setTitle(f'F1ber Updating...')
 
             if os.path.basename(sys.argv[0]).endswith("exe"):
-                with open("F1ber.zip", 'wb')as zipfile:
+                with open("f1bermt1.zip", 'wb')as zipfile:
                     zipfile.write(requests.get(update_url).content)
                 with ZipFile("F1ber.zip", 'r') as filezip:
                     filezip.extractall()
-                os.remove("F1ber.zip")
+                os.remove("f1bermt1.zip")
                 cwd = os.getcwd()+'\\F1ber\\'
                 shutil.copyfile(cwd+'Changelog.md', 'Changelog.md')
                 try:
@@ -60,7 +60,7 @@ def search_for_updates():
                 os._exit(0)
 
             else:
-                ##new_version_source = requests.get("https://github.com/AstraaDev/Discord-All-Tools-In-One/archive/refs/heads/master.zip")
+                new_version_source = requests.get("https://github.com/carbomfiber/f1bermt1/archive/refs/heads/master.zip")
                 with open("F1bermulti.zip", 'wb')as zipfile:
                     zipfile.write(new_version_source.content)
                 with ZipFile("F1bermulti.zip", 'r') as filezip:

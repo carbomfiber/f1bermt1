@@ -37,7 +37,7 @@ print(Fore.LIGHTRED_EX+"♦12♦" + Fore.WHITE+" »" + Fore.BLUE+" random bullsh
 print(Fore.LIGHTRED_EX+"♦13♦" + Fore.WHITE+" »" + Fore.BLUE+" random bullshit")
 print(Fore.LIGHTRED_EX+"♦14♦" + Fore.WHITE+" »" + Fore.BLUE+" random bullshit")
 print(Fore.LIGHTRED_EX+"♦15♦" + Fore.WHITE+" »" + Fore.BLUE+" random bullshit" + Fore.WHITE+"")
-f1bernumber = input("> ")
+f1bernumber = input(">>> ")
 
 if f1bernumber == '1':
   os.system('cmd /k "python util/f1ber/discordtools.py"')

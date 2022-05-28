@@ -1,15 +1,39 @@
 import requests, os, sys, re, time, random, os.path, string, subprocess, random, threading, ctypes, shutil
+from urllib.request import urlopen, urlretrieve
 from colorate import colorate; colorate()
+from bs4 import BeautifulSoup
+from distutils.version import LooseVersion
 from colorama import Fore
 import pylibcheck
+import zipfile
 from time import sleep
+import json as js2,threading
+import websocket
 import json
+import sys
+import io
 
 THIS_VERSION = "0.1"
+
+google_target_ver = 0
+edge_target_ver = 0
 
 y = Fore.LIGHTYELLOW_EX
 b = Fore.LIGHTBLUE_EX
 w = Fore.LIGHTWHITE_EX
+
+def SlowPrint(_str):
+    for letter in _str:
+        #slowly print out the words 
+        sys.stdout.write(letter);sys.stdout.flush();sleep(0.04)
+
+def get_release_version_number(self):
+        path = (
+            "LATEST_RELEASE"
+            if not self.target_version
+            else f"LATEST_RELEASE_{self.target_version}"
+        )
+        return LooseVersion(urlopen(self.__class__.DL_BASE + path).read().decode())
 
 def setTitle(_str):
     system = os.name
@@ -23,7 +47,7 @@ def setTitle(_str):
 def Spinner():
 	l = ['|', '/', '-', '\\']
 	for i in l+l+l:
-		sys.stdout.write(f"""\r{y}[{b}#{y}]{w} Loading... {i}""")
+		sys.stdout.write(f"""\r Loading... {i}""")
 		sys.stdout.flush()
 		time.sleep(0.2)
 
@@ -106,6 +130,29 @@ def proxy_scrape():
     execution_time = (time.time() - startTime)
     setTitle(f"F1ber MultiTool{THIS_VERSION}")
 
+def validateToken(token):
+    '''validate the token by contacting the discord api'''
+    #define variables
+    base_url = "https://discord.com/api/v9/users/@me"
+    message = "You need to verify your account in order to perform this action."
+    #contact discord api and see if you can get a valid response with the given token
+    r = requests.get(base_url, headers=getheaders(token))
+    if r.status_code != 200:
+        #invalid token
+        print(f"\n{Fore.RED}Invalid Token.{Fore.RESET}")
+        sleep(1)
+        os.system('cmd /k "python util/f1ber/discordtools.py"')
+        __import__("F1ber").main()
+    j = requests.get(f'{base_url}/billing/subscriptions', headers=getheaders(token)).json()
+    #check if the account is phone locked
+    try:
+        if j["message"] == message:
+            print(f"\n{Fore.RED}Phone Locked Token.{Fore.RESET}")
+            sleep(1)
+            __import__("F1ber").main()
+    except (KeyError, TypeError, IndexError):
+        pass
+
 def validateWebhook(hook):
     if not "api/webhooks" in hook:
         print(f"\n{Fore.RED}Invalid Webhook.{Fore.RESET}")
@@ -124,6 +171,243 @@ def validateWebhook(hook):
         sleep(1)
         __import__("F1ber").main()
     print(f"{Fore.GREEN}Valid webhook! ({j})")
+
+class Chrome_Installer(object):
+    installed = False
+    target_version = None
+    DL_BASE = "https://chromedriver.storage.googleapis.com/"
+
+    def __init__(self, executable_path=None, target_version=None, *args, **kwargs):
+        self.platform = sys.platform
+
+        if google_target_ver:
+            self.target_version = google_target_ver
+
+        if target_version:
+            self.target_version = target_version
+
+        if not self.target_version:
+            self.target_version = self.get_release_version_number().version[0]
+
+        self._base = base_ = "chromedriver{}"
+
+        exe_name = self._base
+        if self.platform in ("win32",):
+            exe_name = base_.format(".exe")
+        if self.platform in ("linux",):
+            self.platform += "64"
+            exe_name = exe_name.format("")
+        if self.platform in ("darwin",):
+            self.platform = "mac64"
+            exe_name = exe_name.format("")
+        self.executable_path = executable_path or exe_name
+        self._exe_name = exe_name
+
+        if not os.path.exists(self.executable_path):
+            self.fetch_chromedriver()
+            if not self.__class__.installed:
+                if self.patch_binary():
+                    self.__class__.installed = True
+
+    @staticmethod
+    def random_cdc():
+        cdc = random.choices('abcdefghijklmnopqrstuvwxyz', k=26)
+        cdc[-6:-4] = map(str.upper, cdc[-6:-4])
+        cdc[2] = cdc[0]
+        cdc[3] = "_"
+        return "".join(cdc).encode()
+
+    def patch_binary(self):
+        linect = 0
+        replacement = self.random_cdc()
+        with io.open(self.executable_path, "r+b") as fh:
+            for line in iter(lambda: fh.readline(), b""):
+                if b"cdc_" in line:
+                    fh.seek(-len(line), 1)
+                    newline = re.sub(b"cdc_.{22}", replacement, line)
+                    fh.write(newline)
+                    linect += 1
+            return linect
+
+    def get_release_version_number(self):
+        path = (
+            "LATEST_RELEASE"
+            if not self.target_version
+            else f"LATEST_RELEASE_{self.target_version}"
+        )
+        return LooseVersion(urlopen(self.__class__.DL_BASE + path).read().decode())
+
+    def fetch_chromedriver(self):
+        base_ = self._base
+        zip_name = base_.format(".zip")
+        ver = self.get_release_version_number().vstring
+        if os.path.exists(self.executable_path):
+            return self.executable_path
+        urlretrieve(
+            f"{self.__class__.DL_BASE}{ver}/{base_.format(f'_{self.platform}')}.zip",
+            filename=zip_name,
+        )
+        with zipfile.ZipFile(zip_name) as zf:
+            zf.extract(self._exe_name)
+        os.remove(zip_name)
+        if sys.platform != "win32":
+            os.chmod(self._exe_name, 0o755)
+        return self._exe_name
+
+class Edge_Installer(object):
+    installed = False
+    target_version = None
+    DL_BASE = "https://msedgedriver.azureedge.net/"
+
+    def __init__(self, executable_path=None, target_version=None, *args, **kwargs):
+        self.platform = sys.platform
+
+        if edge_target_ver:
+            self.target_version = edge_target_ver
+
+        if target_version:
+            self.target_version = target_version
+
+        if not self.target_version:
+            self.target_version = self.get_release_version_number().version[0]
+
+        self._base = base_ = "edgedriver{}"
+
+        exe_name = self._base
+        if self.platform in ("win32",):
+            exe_name = base_.format(".exe")
+        if self.platform in ("linux",):
+            self.platform += "64"
+            exe_name = exe_name.format("")
+        if self.platform in ("darwin",):
+            self.platform = "mac64"
+            exe_name = exe_name.format("")
+        self.executable_path = executable_path or exe_name
+        self._exe_name = exe_name
+
+        if not os.path.exists(self.executable_path):
+            self.fetch_edgedriver()
+            if not self.__class__.installed:
+                if self.patch_binary():
+                    self.__class__.installed = True
+
+    @staticmethod
+    def random_cdc():
+        cdc = random.choices('abcdefghijklmnopqrstuvwxyz', k=26)
+        cdc[-6:-4] = map(str.upper, cdc[-6:-4])
+        cdc[2] = cdc[0]
+        cdc[3] = "_"
+        return "".join(cdc).encode()
+
+    def patch_binary(self):
+        linect = 0
+        replacement = self.random_cdc()
+        with io.open("ms"+self.executable_path, "r+b") as fh:
+            for line in iter(lambda: fh.readline(), b""):
+                if b"cdc_" in line:
+                    fh.seek(-len(line), 1)
+                    newline = re.sub(b"cdc_.{22}", replacement, line)
+                    fh.write(newline)
+                    linect += 1
+            return linect
+
+
+    def get_release_version_number(self):
+        path = (
+            "LATEST_STABLE"
+            if not self.target_version
+            else f"LATEST_RELEASE_{str(self.target_version).split('.', 1)[0]}"
+        )
+        urlretrieve(
+            f"{self.__class__.DL_BASE}{path}",
+            filename=f"{getTempDir()}\\{path}",
+        )
+        with open(f"{getTempDir()}\\{path}", "r+") as f:
+            _file = f.read().strip("\n")
+            content = ""
+            for char in [x for x in _file]:
+                for num in ("0","1","2","3","4","5","6","7","8","9","."):
+                    if char == num:
+                        content += char
+        return LooseVersion(content)
+
+    def fetch_edgedriver(self):
+        base_ = self._base
+        zip_name = base_.format(".zip")
+        ver = self.get_release_version_number().vstring
+        if os.path.exists(self.executable_path):
+            return self.executable_path
+        urlretrieve(
+            f"{self.__class__.DL_BASE}{ver}/{base_.format(f'_{self.platform}')}.zip",
+            filename=zip_name,
+        )
+        with zipfile.ZipFile(zip_name) as zf:
+            zf.extract("ms"+self._exe_name)
+        os.remove(zip_name)
+        if sys.platform != "win32":
+            os.chmod(self._exe_name, 0o755)
+        return self._exe_name
+
+class Opera_Installer(object):
+    DL_BASE = "https://github.com"
+    def __init__(self, *args, **kwargs):
+        self.platform = sys.platform
+        self.links = ""
+
+        r = requests.get(self.__class__.DL_BASE+"/operasoftware/operachromiumdriver/releases")
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for link in soup.find_all('a'):
+            if "operadriver" in link.get('href'):
+                self.links += f"{link.get('href')}\n"
+
+        for i in self.links.split("\n")[:4]:
+            if self.platform in i:
+                self.fetch_edgedriver(i)
+
+    def fetch_edgedriver(self, driver):
+        executable = "operadriver.exe"
+        driver_name = driver.split("/")[-1]
+        cwd = os.getcwd() + os.sep
+
+        urlretrieve(self.__class__.DL_BASE+driver, filename=driver_name)
+        with zipfile.ZipFile(driver_name) as zf:
+            zf.extractall()
+        shutil.move(cwd+driver_name[:-4]+os.sep+executable, cwd+executable)
+        os.remove(driver_name)
+        shutil.rmtree(driver_name[:-4])
+
+def getDriver():
+    #supported drivers
+    drivers = ["chromedriver.exe", "msedgedriver.exe", "operadriver.exe"]
+    print(f"\n{Fore.BLUE}Checking Driver. . .")
+    sleep(0.5)
+
+    for driver in drivers:
+        #Checking if driver already exists
+        if os.path.exists(os.getcwd() + os.sep + driver):
+            print(f"{Fore.GREEN}{driver} already exists, continuing. . .{Fore.RESET}")
+            sleep(0.5)
+            return driver
+    else:
+        print(f"{Fore.RED}Driver not found! Installing it for you")
+        #get installed browsers + install driver + return correct driver
+        if os.path.exists(os.getenv('localappdata') + '\\Google'):
+            Chrome_Installer()
+            print(f"{Fore.GREEN}chromedriver.exe Installed!{Fore.RESET}")
+            return "chromedriver.exe"
+        elif os.path.exists(os.getenv('appdata') + '\\Opera Software\\Opera Stable'):
+            Opera_Installer()
+            print(f"{Fore.GREEN}operadriver.exe Installed!{Fore.RESET}")
+            return "operadriver.exe"
+        elif os.path.exists(os.getenv('localappdata') + '\\Microsoft\\Edge'):
+            Edge_Installer()
+            print(f"{Fore.GREEN}msedgedriver.exe Installed!{Fore.RESET}")
+            return "msedgedriver.exe"
+        else:
+            print(f'{Fore.RESET}[{Fore.RED}Error{Fore.RESET}] : No compatible driver found. . . Proceeding with chromedriver')
+            Chrome_Installer()
+            print(f"{Fore.GREEN}trying with chromedriver.exe{Fore.RESET}")
+            return "chromedriver.exe"
 
 def installPackage(dependencies):
     print(f'{Fore.CYAN}Checking packages. . .{Fore.RESET}')
